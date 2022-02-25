@@ -1,0 +1,47 @@
+
+h1. An audio focused ffmpeg build for the web
+
+"FFmpeg":https://ffmpeg.org/ claims to be __'a complete, cross-platform solution to record, convert and stream audio and video'__.  "WebAssembly":https://webassembly.org  makes it possible to use ffmpeg in the browser or in node.js. That means that video and audio transcoding in almost any format can be done in the browser. This repository provides a **audio focused WebAssembly build of ffmpeg** together with some examples on how it can be used.
+
+!./media/screen_recording_small.apng(Transcode audio in the browser)!
+<small>Fig: "Demo of transcoding in the browser with ffmpeg.audio.wasm.":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html </small>
+
+This repository contains:
+
+* @build@ two builds of ffmpeg.wasm one audio focused and another (larger ffmpeg.wasm build) which also contains video encoders.
+* @examples@ The examples show how to use ffmpeg.audio.wasm.
+** @browser@ 
+*** @transcode.html@ Shows how to transcode audio. Try the "live audio transcoding demo.":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html 
+*** @pitch_speed_tempo_mod.html@  Shows how to do "high quality tempo or pitch modification.":https://0110.be/attachment/cors/ffmpeg.audio.wasm/pitch_speed_tempo_mod.html
+** @node@ shows how to call ffmpeg.audio.wasm from a Node.js environment.
+* @js@ simple wrapper code to call into the WebAssembly module.
+
+
+h2. Why ffmpeg.audio.wasm?
+
+To allow processing of audio files of any format in the browsers a WebAssembly ffmpeg is very helpful. There are a few WebAssembly builds of ffmpeg but they also include video encoders. Concretely the complete ffmpeg.wasm binary weighs about 20MB while the audio focused one weighs only 5MB (and can be gzipped to 3MB). Since this needs to be downloaded by every user this adds up. In my view, audio transcoding is also better suited as a browser workload compared to video transcoding since the time it takes is measured in seconds not in minutes (as is the case for video transcoding).
+
+ffmpeg.audio.wasm includes the "Rubber Band Library":https://breakfastquay.com/rubberband/ for high quality audio pitch-shifting and time-stretching.
+
+The Javascript wrapper is more simple than the one provided by "ffmpeg.wasm":https://github.com/ffmpegwasm/ffmpeg.wasm. It is a single Javascript file that can be used from both node and the browser. 
+
+
+h2. Limitations
+
+To use WebAssembly modules in browsers "CORS":https://en.wikipedia.org/wiki/Cross-origin_resource_sharing needs to be configured correctly on your web server. A working configuration sets these headers: <tt>'Cross-Origin-Embedder-Policy' => 'require-corp'</tt> and <tt>'Cross-Origin-Opener-Policy' => 'same-origin'</tt>.
+
+
+h2. Credits & Licenses
+
+The ffmpeg.wasm binary contains code transpiled from the ffmpeg project and several other modules. Please respect licenses of the various components and, if needed, buy a commercial license for using Rubber Band.
+
+* "FFmpeg":https://ffmpeg.org/  __'a complete, cross-platform solution to record, convert and stream audio and video'__ LGPL with GPL licensed parts.
+* "ffmpeg.wasm-core":https://github.com/ffmpegwasm/ffmpeg.wasm-core a WebAssembly build of ffmpeg aimed to provide both video and audio encoding.
+* "ffmpeg.wasm":https://github.com/ffmpegwasm/ffmpeg.wasm a set of scripts to use the ffmpeg.wasm-core in the browser and in node .
+* "ffmpeg-wasm":https://github.com/wide-video/ffmpeg-wasm a more recent WebAssembly build of ffmpeg, again aimed to provide both video and audio encoding. The build scripts are more up-to-date and work now (February 2022). I have included the build scripts of that project here, for reference.
+* "rubberband":https://breakfastquay.com/rubberband/ __Rubber Band Library is a high quality software library for audio time-stretching and pitch-shifting. It permits you to change the tempo and pitch of an audio stream or recording dynamically and independently of one another.__  The Rubber Band Library is compiled into ffmpeg.audio.wasm. Please respect the 
+* "Opus":https://opus-codec.org/license/ __'Opus is a totally open, royalty-free, highly versatile audio codec'__. BSD licensed.
+* "Lame":https://lame.sourceforge.io/ __'LAME is a high quality MPEG Audio Layer III (MP3) encoder licensed under the LGPL'__.
+
+
+ffmpeg.audio.wasm by Joren Six at IPEM, Ghent University.

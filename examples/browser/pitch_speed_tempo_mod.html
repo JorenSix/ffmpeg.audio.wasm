@@ -1,0 +1,307 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Tempo or pitch modification</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+    <meta name="theme-color" content="#7952b3">
+
+    <script src="ffmpeg.audio.core/v5/ffmpeg.core.js"></script>
+    <script src="js/ffmpeg.helper.js"></script>
+    <script src="js/task.helper.js"></script>
+
+    <style type="text/css">
+      #drop_zone{
+          box-sizing: border-box;
+          display: none;
+          position: fixed;
+          width: 100%;
+          height: 100%;
+          left: 0;
+          top: 0;
+          z-index: 99999;
+          background: rgba(0,0,94,.2);
+          box-shadow: 32px 23px 131px -1px rgba(0,0,0,0.75) inset;
+          justify-content: center;
+          align-items: center;
+      }
+
+      body{
+        padding: 0.5rem;
+      }
+      fieldset{
+        margin-bottom: 0.5rem ;
+      }
+
+      tbody > tr:last-child > td {
+      border-bottom: 0;
+      }
+    </style>
+
+    <script type="text/javascript">
+
+      var taskQueue = [];
+      var verbose = true;
+
+      function dragOverHandler(ev) {
+        ev.preventDefault();
+      }
+
+      function dragEnterHandler(ev){
+        document.getElementById("drop_zone").style.display = "flex";
+      }
+
+      function dragLeaveHandler(ev){
+        document.getElementById("drop_zone").style.display = "none";
+      }
+
+      
+
+      function addToQueue(file){
+        var newExt = ""
+        var radio_buttons = document.getElementsByName('format_select');
+        for(i = 0; i < radio_buttons.length; i++) {
+            if(radio_buttons[i].checked) newExt = radio_buttons[i].value;                
+        }
+
+        var inputFile = new MediaFile(file.name);
+        var outputName = file.name.replace(inputFile.extension(),newExt);
+        var outputFile = new MediaFile(outputName);
+        const pitch_factor = parseInt(document.getElementById("pitchRange").value) / 100.0;
+        const tempo_factor = parseInt(document.getElementById("tempoRange").value) / 100.0;
+        taskQueue.push(new FFmpegTask(inputFile,outputFile,tempo_factor,pitch_factor));
+
+        inputFile.buffer = file.arrayBuffer();        
+
+        console.log("Add to queue ",taskQueue);
+      }
+
+      function dropHandler(ev) {
+        if(verbose) console.log('File(s) dropped',ev);
+        dragLeaveHandler();
+
+        // Prevent default behavior (Prevent file from being opened)
+        ev.preventDefault();
+
+        if (ev.dataTransfer.items) {
+          // Use DataTransferItemList interface to access the file(s)
+          for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+            // If dropped items aren't files, reject them
+            if (ev.dataTransfer.items[i].kind === 'file') {
+              var file = ev.dataTransfer.items[i].getAsFile();
+              console.log('Items file[' + i + '].name = ' + file.name);
+              addToQueue(file);
+            }
+          }
+        } else {
+          // Use DataTransfer interface to access the file(s)
+          for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+            console.log('DataTransfer ... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
+            addToQueue(ev.dataTransfer.files[i]);
+          } 
+        }
+        console.log("Process queue");
+
+        processTaskQueue(taskQueue,addInterfaceElements,updateInterfaceElements,updateProgress);
+      }
+
+      window.onload = function() {
+
+        document.getElementById('uploader').addEventListener('change', addToFileQueue);
+
+        window.addEventListener('dragenter', dragEnterHandler);
+
+        document.getElementById("drop_zone").addEventListener('dragenter', dragEnterHandler);
+        document.getElementById("drop_zone").addEventListener('dragleave', dragLeaveHandler);
+        document.getElementById("drop_zone").addEventListener('drop', dropHandler);
+        document.getElementById("drop_zone").addEventListener('dragover', dragOverHandler);
+
+        document.getElementById('uploader_button').addEventListener('click', () => {document.getElementById('uploader').click();});
+      };
+
+      function emptyResults(){
+        console.log("clear");
+        taskQueue= [];
+        const results_tbody = document.getElementById("transcode_results");
+        results_tbody.innerHTML = "";
+        const  results_container = document.getElementById("results");
+        results_container.style["display"] = "none";
+      }
+      
+
+      function addInterfaceElements(taskQueueIndex,task){
+
+        const results_tbody = document.getElementById("transcode_results");
+        const row = document.createElement('tr');
+        row.id = "result_" + taskQueueIndex;
+        results_tbody.appendChild(row);
+
+        const index_td = document.createElement('td');
+        index_td.className="align-middle";
+        index_td.textContent = taskQueueIndex;
+        row.appendChild(index_td);
+
+        const audio_td = document.createElement('td');
+        audio_td.className="align-middle";
+        audio = document.createElement('audio');
+        audio.controls = true;
+        audio_td.appendChild(audio);
+        row.appendChild(audio_td);
+
+        const filename_td = document.createElement('td');
+        filename_td.className="align-middle";
+        filename_td.innerHTML = '<div class="progress" style="width:20vw;"><div class="progress-bar bg-success" role="progressbar" id="progress_bar_task_' + taskQueueIndex + '" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div></div>';
+
+        row.appendChild(filename_td);
+
+        const spinner_td = document.createElement('td');
+        spinner_td.className="align-middle";
+        spinner_td.innerHTML = '<div class="spinner-border ms-auto" role="status" aria-hidden="true"></div>'
+        row.appendChild(spinner_td);
+
+        const  results_container = document.getElementById("results");
+        results_container.style["display"] = "block";
+      }
+
+      function updateProgress(progress){
+         for (const index in taskQueue) {
+          task = taskQueue[index];
+          if(!task.running) continue;
+          var row = document.getElementById("result_"+index);
+          var filename = row.children[2];
+          var progress_bar = document.getElementById("progress_bar_task_"+index);
+          progress_bar.style["width"] = progress + "%";
+          progress_bar.textContent = progress  + "%" ;
+          if(progress == 100){
+            filename.textContent = "" ;
+          }
+        }
+      }
+
+      function updateInterfaceElements(taskQueueIndex,task){
+
+        task = taskQueue[taskQueueIndex];
+        console.log(taskQueueIndex,task.input_file.file_name)
+
+        var row = document.getElementById("result_"+taskQueueIndex);
+        var audio = row.children[1].children[0];
+        
+
+        const link = document.createElement("a");
+        // Set link's href to point to the Blob URL
+
+        if(!task.failed) {
+          const blobUrl = URL.createObjectURL(task.output_file.asBlob());
+          audio.src = blobUrl;
+          link.href = blobUrl;
+        }
+
+        var filename = row.children[2];
+
+        link.download = task.output_file.file_name;
+        link.textContent = task.output_file.file_name;
+
+        filename.appendChild(link);
+        
+        var status = row.children[3];
+        if(task.failed){
+          status.innerHTML =  '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="red" class="bi bi-exclamation-triangle" viewBox="0 0 16 16"><path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"/><path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z"/></svg>'
+        }else{
+          status.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="green" class="bi bi-check" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>';
+        }
+        status.innerHTML;
+      }
+
+      
+      async function addToFileQueue(ev){
+        fileList = ev.target.files;
+        for (var i = 0; i < fileList.length; i++) {
+          console.log(fileList[i].name);
+          await addToQueue(fileList[i]);
+        }
+        processTaskQueue(taskQueue,addInterfaceElements,updateInterfaceElements,updateProgress);
+      }
+
+    </script>
+
+    <style>
+      
+    </style>
+
+  </head>
+  <body >
+    <div id="drop_zone" class="text-muted">
+      <svg xmlns="http://www.w3.org/2000/svg" style="width: 20vh;height: 20vh"   fill="rgb(108, 117, 125)" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+      </svg>
+    </div>
+
+    <h1 class="h2">Modify audio tempo or pitch</h1>
+
+
+    <fieldset class="border p-2">
+      <legend class="w-auto float-none small text-muted">1. Select modification</legend>
+      <label for="tempoRange" class="form-label">Tempo change <span id="rangeval_tempo">100</span>%</label>
+      <input type="range" min="10" max="300" value="100" class="form-range" id="tempoRange" onInput="document.getElementById('rangeval_tempo').innerText = document.getElementById('tempoRange').value">
+      <label for="pitchRange" class="form-label">Pitch change <span id="rangeval_pitch">100</span>%</label>
+      <input type="range" min="10" max="300" value="100" class="form-range" id="pitchRange" onInput="document.getElementById('rangeval_pitch').innerText = document.getElementById('pitchRange').value">
+    </fieldset>
+
+
+    <fieldset class="border p-2">
+      <legend class="w-auto float-none small text-muted">2. Select output format</legend>
+      <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Audio format">
+          <input type="radio" class="btn-check"  name="format_select" id="format_mp3" value="mp3" autocomplete="off" checked>
+          <label class="btn btn-outline-primary" for="format_mp3">MP3</label>
+
+          <input type="radio" class="btn-check" name="format_select" id="format_wav" value="wav" autocomplete="off">
+          <label class="btn btn-outline-primary" for="format_wav">WAV</label>
+
+          <input type="radio" class="btn-check" name="format_select" id="format_opus" value="opus" autocomplete="off">
+          <label class="btn btn-outline-primary" for="format_opus">Opus</label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="border p-2">
+      <legend class="w-auto float-none small text-muted">3. Select audio files</legend>      
+        <input type="file" id="uploader" multiple="true" hidden>
+
+        <div style="display: grid; grid-template-columns: 1fr;grid-gap: 0.7rem;min-width: 150px;text-align: center; "  >
+        <button type="button" id="uploader_button" class="btn btn-lg btn-primary">Select audio files</button>
+        <span class="text-muted">
+        ... or drop your audio files
+        </span>
+
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="rgb(108, 117, 125)"  style="margin: auto" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        
+      
+    </fieldset>
+
+    <fieldset id="results" class="border p-2" style="display: none"  >
+      <legend class="w-auto float-none small text-muted">4. Download your files</legend>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <tbody id="transcode_results">
+            </tbody>
+          </table>
+        </div>
+
+        <button type="button" id="uploader_button" onclick="emptyResults();" class="btn btn-primary">Clear</button>
+    </fieldset>
+
+    <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  </body>
+</html>

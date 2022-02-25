@@ -1,0 +1,9 @@
+build/FFmpeg
+build/opus
+build/lame-3.99.5
+build/rubberband
+
+.DS_Store
+test
+*_out.mp3
+
