@@ -25,6 +25,7 @@ ffmpeg.audio.wasm includes the "Rubber Band Library":https://breakfastquay.com/r
 
 The Javascript wrapper is more simple than the one provided by "ffmpeg.wasm":https://github.com/ffmpegwasm/ffmpeg.wasm. It is a single Javascript file that can be used from both node and the browser. 
 
+More about the rationale behind "an audio focused ffmpeg build for the web ":https://0110.be/posts/An_audio_focused_ffmpeg_build_for_the_web can be found on my blog.
 
 h2. Limitations
 
