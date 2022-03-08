@@ -7,15 +7,15 @@ class FFmpegHelper{
 	ffmpegLogEmptyCount = 0;
 	ffmpegDurationHandler = null;
 	ffmpegProgressHandler = null;
-
-	logReaderTimer = null;
+	ffmpegLogHandler = null;
 
 	handleFFmpegOutput = (type,message) => {
 		//console.log(type,message);
+		if(this.ffmpegLogHandler != null) this.ffmpegLogHandler(type,message);
+		
 		this.detectDuration(message);
 		this.detectProgress(message);
 		this.detectCompletion(message);
-
 	}
 
 	initialzeFFmpeg = async () => {
@@ -54,7 +54,6 @@ class FFmpegHelper{
 
 	detectDuration = (message) => {
 		var duration_matches = message.match(/.*Duration..(\d\d).(\d\d).(\d\d).(\d+).*/m);
-
 		if(duration_matches == null) return;
 
 	    var hours = parseFloat(duration_matches[1]);
@@ -71,32 +70,21 @@ class FFmpegHelper{
 	}
 
 	detectCompletion = (message) => {
-		if ((message.includes('kB muxing overhead') || message.includes('Invalid argument') || message.includes('Invalid data found')) && this.runResolve !== null) {
+		if ((message.includes('kB muxing overhead') || message.includes('Invalid argument') || message.includes('Invalid data found') || message.includes("At least one output file")) && this.runResolve !== null) {
 		  this.runResolve();
 		  this.runResolve = null;
 		  this.ffmpegLogEmptyCount = 0;
 		  this.ffmpegRunning = false;
-
 		  //reset duration and report final progress: 100%
 		  this.ffmpegCurrentDuration = null;
 		  if(this.ffmpegProgressHandler!=null) this.ffmpegProgressHandler(100);
 		}
 	};
 
-	stopLogReader = () => {
-		if(this.logReaderTimer == null) return;
-		//stop timer
-	  	clearInterval(this.logReaderTimer);
-		this.logReaderTimer = null;
-		//console.log("Stopped timer");
-	}
-
 	run = (args) => {
-		//var defaultArgs = [ '-y', '-report', '-hide_banner', '-loglevel', 'info', '-nostdin']
 		var defaultArgs = [ '-y', '-hide_banner', '-stats_period', '0.2', '-loglevel', 'info', '-nostdin']
 		args = [...defaultArgs,...args];
 		console.log('info', `run ffmpeg command: ${args.join('\' \'')}`);
-
 		if (this.ffmpegRunning) {
 		  throw Error('ffmpeg.wasm can only run one command at a time');
 		} else {

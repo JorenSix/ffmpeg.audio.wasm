@@ -6,9 +6,19 @@ h1. An audio focused ffmpeg build for the web
 !./media/screen_recording_small.apng(Transcode audio in the browser)!
 <small>Fig: "Demo of transcoding in the browser with ffmpeg.audio.wasm.":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html </small>
 
+h2. Live demos
+
+* "Audio transcoding":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html transcode from about any format to wav/mp3/opus. The transcoder also supports extracting the first audio stream in video container formats (like mp4, mkv, avi, mov,...). 
+* "High quality pitch-shifting and time-stretching":https://0110.be/attachment/cors/ffmpeg.audio.wasm/pitch_speed_tempo_mod.html modify speed or pitch of your audio files independently.
+* "Basic media info":https://0110.be/attachment/cors/ffmpeg.audio.wasm/basic_media_info.html Extracts info on your media files. Details on multi-media encoding, sample-rates, resolutions and so forth can be found.
+
+
+
+h2. Contents of this repository
+
 This repository contains:
 
-* @build@ two builds of ffmpeg.wasm one audio focused and another (larger ffmpeg.wasm build) which also contains video encoders.
+* @build@ two builds of ffmpeg.wasm. One is audio focused and another (larger ffmpeg.wasm build) which also contains video encoders.
 * @examples@ The examples show how to use ffmpeg.audio.wasm.
 ** @browser@ 
 *** @transcode.html@ Shows how to transcode audio. Try the "live audio transcoding demo.":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html 

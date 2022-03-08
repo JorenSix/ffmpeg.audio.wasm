@@ -22,6 +22,50 @@ class MediaFile {
   	return this.file_name.split('.').pop();
   }
 
+  async info(){
+    
+    var helper = FFmpegSingleton.getInstance();
+    await helper.initialzeFFmpeg();
+    var log = "";
+    helper.ffmpegLogHandler = (type,message) => {log = log + '\n' + message};
+
+    var inputFileName = this.file_name;
+
+    var args = ['-i', inputFileName  ];
+
+    if(typeof window === `undefined`)
+      helper.FS().writeFile(inputFileName, new Uint8Array(this.buffer)) ;
+    else
+      helper.FS().writeFile(inputFileName, new Uint8Array(await this.buffer)) ;
+
+    await helper.run(args);
+
+    var stream_info = {streams: []};
+
+    var stream_matches = log.match(/.*Stream .\d.*/mg);
+    
+    if(stream_matches == null) return stream_info;
+
+    stream_matches.forEach((m) => {
+      var isAudio = m.includes('Audio');
+      var isVideo = m.includes('Video');
+      var stream_info_matches = m.match(/.*Stream..(\d+).(\d+).*/);
+      var stream_index = 0;
+      var sub_stream_index = 0;
+      if(stream_info_matches){
+        stream_index = parseFloat(stream_info_matches[1]);
+        sub_stream_index = parseFloat(stream_info_matches[2]);
+      }
+
+      var stream_encoding_matches = m.match(/.*Stream.*(Audio|Video).(.*)/);
+      var encoding_info = stream_encoding_matches[2];
+      stream_info['streams'].push({stream_index: stream_index, sub_stream_index: sub_stream_index, is_audio: isAudio, is_video: isVideo, encoding_info: encoding_info});
+    });
+
+    return stream_info;
+
+  }
+
 
 }
 
@@ -35,6 +79,7 @@ class FFmpegTask{
   log = null;
   running = false;
   tempo_factor = 1.0;
+  run_duration = 0;
 
 
   constructor(in_file,out_file,tempo_factor=1.0,pitch_factor=1.0){

@@ -83,7 +83,6 @@
       }
 
       function dropHandler(ev) {
-        if(verbose) console.log('File(s) dropped',ev);
         dragLeaveHandler();
 
         // Prevent default behavior (Prevent file from being opened)
@@ -95,18 +94,18 @@
             // If dropped items aren't files, reject them
             if (ev.dataTransfer.items[i].kind === 'file') {
               var file = ev.dataTransfer.items[i].getAsFile();
-              console.log('Items file[' + i + '].name = ' + file.name);
+              //console.log('Items file[' + i + '].name = ' + file.name);
               addToQueue(file);
             }
           }
         } else {
           // Use DataTransfer interface to access the file(s)
           for (var i = 0; i < ev.dataTransfer.files.length; i++) {
-            console.log('DataTransfer ... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
+            //console.log('DataTransfer ... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
             addToQueue(ev.dataTransfer.files[i]);
           } 
         }
-        console.log("Process queue");
+        //console.log("Process queue");
 
         processTaskQueue(taskQueue,addInterfaceElements,updateInterfaceElements,updateProgress);
       }
@@ -126,7 +125,6 @@
       };
 
       function emptyResults(){
-        console.log("clear");
         taskQueue= [];
         const results_tbody = document.getElementById("transcode_results");
         results_tbody.innerHTML = "";
@@ -187,7 +185,7 @@
       function updateInterfaceElements(taskQueueIndex,task){
 
         task = taskQueue[taskQueueIndex];
-        console.log(taskQueueIndex,task.input_file.file_name)
+        console.log(taskQueueIndex,task.input_file.file_name,"duration (ms)", task.run_duration);
 
         var row = document.getElementById("result_"+taskQueueIndex);
         var audio = row.children[1].children[0];
@@ -222,7 +220,6 @@
       async function addToFileQueue(ev){
         fileList = ev.target.files;
         for (var i = 0; i < fileList.length; i++) {
-          console.log(fileList[i].name);
           await addToQueue(fileList[i]);
         }
         processTaskQueue(taskQueue,addInterfaceElements,updateInterfaceElements,updateProgress);
