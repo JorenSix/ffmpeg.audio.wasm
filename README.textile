@@ -8,9 +8,9 @@ h1. An audio focused ffmpeg build for the web
 
 h2. Live demos
 
-* "Audio transcoding":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html transcode from about any format to wav/mp3/opus. The transcoder also supports extracting the first audio stream in video container formats (like mp4, mkv, avi, mov,...). 
-* "High quality pitch-shifting and time-stretching":https://0110.be/attachment/cors/ffmpeg.audio.wasm/pitch_speed_tempo_mod.html modify speed or pitch of your audio files independently.
-* "Basic media info":https://0110.be/attachment/cors/ffmpeg.audio.wasm/basic_media_info.html Extracts info on your media files. Details on multi-media encoding, sample-rates, resolutions and so forth can be found.
+* "Audio transcoding":https://0110.be/attachment/cors/ffmpeg.audio.wasm/transcode.html: transcode from about any format to wav/mp3/opus. The transcoder also supports extracting the first audio stream in video container formats (like mp4, mkv, avi, mov,...). 
+* "High quality pitch-shifting and time-stretching":https://0110.be/attachment/cors/ffmpeg.audio.wasm/pitch_speed_tempo_mod.html: modify speed or pitch of your audio files independently.
+* "Basic media info":https://0110.be/attachment/cors/ffmpeg.audio.wasm/basic_media_info.html: Extracts info on your media files. Details on multi-media encoding, sample-rates, resolutions and so forth can be found.
 
 
 
